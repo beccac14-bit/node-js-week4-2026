@@ -21,6 +21,30 @@ const jwt = require('jsonwebtoken');
  */
 const verifyToken = function (req, res, next) {
   /* 作答區 */
+  const headerAuth = req.headers.authorization; 
+  
+  if( !headerAuth || !headerAuth.startsWith('Bearer ') ){
+    res.status(401).json({ status: 'false', message: '請先登入' });
+    return;
+  };
+
+  const token = req.headers.authorization.split(' ')[1];
+  const SECRET = process.env.JWT_SECRET;
+
+  try{
+
+    const decoded = jwt.verify(token, SECRET);
+    req.user = decoded;
+    next();
+  
+  } catch(error) {
+
+    res.status(401).json( { status: 'false', message: 'Token 無效或已過期' } );
+  
+  }
+
+
+
 };
 
 module.exports = verifyToken;

@@ -29,9 +29,53 @@ const router = express.Router();
 //   2. 密碼加密可使用 bcrypt 的 genSalt 與 hash 
 //   3. 加密完成後，將新使用者（包含 id、email、加密後 password）存進 users，並 return 201 跟對應輸出訊息
 // - 注意：handler 是 async function
-/* 作答區
-router.METHOD('PATH', async (req, res) => { ... });
-*/
+
+// 作答區
+router.post('/register', async (req, res) => { 
+
+// 錯誤 400：驗證 email password 兩個欄位是否都有
+    const userInfo = req.body;
+    const standardFields = ['email', 'password'];
+    const validateFieldsResult = standardFields.filter(field => !userInfo[field]); // 如果有缺就回陣列
+
+    if (validateFieldsResult.length > 0) {
+        res.status(400).json( {status: 'false', message: `缺少必填欄位：${validateFieldsResult.join(', ')}`} );  
+        return;
+    }
+
+// 錯誤 400：驗證 email 有無重複
+    const userFound = users.find(user => user.email === userInfo.email);
+    // users.find 回傳第一個符合條件的元素。若找不到任何符合的值，則回傳 undefined。
+
+    if( userFound ){
+
+        res.status(400).json( {status: 'false', message: `此 Email 已被使用`} );
+        return; 
+
+    };
+    
+
+// 密碼加密：bcrypt 的 genSalt 與 hash
+
+const password = req.body.password;
+
+  // 1. 產生 Salt（rounds = 10）
+  const salt = await bcrypt.genSalt(10);
+
+  // 2. 將密碼加鹽雜湊後儲存（模擬存入資料庫）
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+
+
+// 將新使用者（包含 id、email、加密後 password）存進 users，並 return 201 跟對應輸出訊息
+
+  const newMember = { id: nextId++, email: userInfo.email , password: hashedPassword };
+  users.push(newMember);
+  res.status(201).json({ status: 'success', data: newMember });
+
+
+ });
+
 
 // ───────────────────────────────────────────────────────────
 // TODO 任務三：POST /login
@@ -46,9 +90,40 @@ router.METHOD('PATH', async (req, res) => { ... });
 //   3. 用 jwt.sign 簽出 token，payload 帶入使用者的 id 和 email，secret 使用 process.env.JWT_SECRET，有效期設為 30 天
 //   4. token 簽出後，回應 200 跟對應輸出訊息
 // - 注意：handler 是 async function
-/* 作答區
-router.METHOD('PATH', async (req, res) => { ... });
-*/
+// 作答區
+router.post('/login', async (req, res) => { 
+
+// 錯誤 400：驗證 email 符合的使用者
+    const userInfo = req.body;
+    const userIndex = users.findIndex(user => user.email === userInfo.email);
+
+    if(userIndex == -1){
+
+        res.status(401).json( {status: 'false', message: `帳號或密碼錯誤`} );
+        return; 
+
+    };
+
+
+// 錯誤 400：驗證 password 是否輸入正確
+    const isMatch = await bcrypt.compare( userInfo.password , users[userIndex].password);
+    if(!isMatch){
+
+        res.status(401).json( {status: 'false', message: `帳號或密碼錯誤`} );
+        return; 
+
+    };
+
+
+// 用 jwt.sign 簽出 token，payload 帶入使用者的 id 和 email，secret 使用 process.env.JWT_SECRET，有效期設為 30 天
+
+    const payload = { id: users[userIndex].id, email: users[userIndex].email};
+    const SECRET = process.env.JWT_SECRET;
+    const token = jwt.sign(payload, SECRET, {expiresIn : '30d'});
+    res.status(200).json({ status: 'success', token});
+
+ });
+
 
 // ───────────────────────────────────────────────────────────
 // TODO 任務四：GET /me（受保護）
@@ -57,8 +132,13 @@ router.METHOD('PATH', async (req, res) => { ... });
 // GET /me
 // - 保護：路由第二個參數掛上 verifyToken 守門員（驗過後會將使用者資料掛到 req.user）
 // - 輸出：200 + { status: 'success', user: ... }
-/* 作答區
-router.METHOD('PATH', middleware, (req, res) => { ... });
-*/
+// 作答區
+router.get('/me', verifyToken, (req, res) => { 
+
+    res.status(200).json({ status: 'success', user: req.user });
+
+
+ });
+
 
 module.exports = router;
