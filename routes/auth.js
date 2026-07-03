@@ -128,7 +128,7 @@ try{
     res.status(200).json({ status: 'success', token});
 
 } catch(err) {
-        next(err);
+    next(err);
 };
 
 });
