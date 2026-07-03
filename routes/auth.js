@@ -31,8 +31,9 @@ const router = express.Router();
 // - 注意：handler 是 async function
 
 // 作答區
-router.post('/register', async (req, res) => { 
+router.post('/register', async (req, res, next) => { 
 
+try {
 // 錯誤 400：驗證 email password 兩個欄位是否都有
     const userInfo = req.body;
     const standardFields = ['email', 'password'];
@@ -73,6 +74,9 @@ const password = req.body.password;
   users.push(newMember);
   res.status(201).json({ status: 'success', data: newMember });
 
+} catch(err) {
+    next(err);
+};
 
  });
 
@@ -91,8 +95,9 @@ const password = req.body.password;
 //   4. token 簽出後，回應 200 跟對應輸出訊息
 // - 注意：handler 是 async function
 // 作答區
-router.post('/login', async (req, res) => { 
+router.post('/login', async (req, res, next) => { 
 
+try{
 // 錯誤 400：驗證 email 符合的使用者
     const userInfo = req.body;
     const userIndex = users.findIndex(user => user.email === userInfo.email);
@@ -122,7 +127,11 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(payload, SECRET, {expiresIn : '30d'});
     res.status(200).json({ status: 'success', token});
 
- });
+} catch(err) {
+        next(err);
+};
+
+});
 
 
 // ───────────────────────────────────────────────────────────
@@ -135,10 +144,14 @@ router.post('/login', async (req, res) => {
 // 作答區
 router.get('/me', verifyToken, (req, res) => { 
 
+try{
     res.status(200).json({ status: 'success', user: req.user });
 
+} catch(err){
+    next(err);
+};
 
- });
+});
 
 
 module.exports = router;
