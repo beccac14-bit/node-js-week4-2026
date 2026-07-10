@@ -72,7 +72,8 @@ const password = req.body.password;
 
   const newMember = { id: nextId++, email: userInfo.email , password: hashedPassword };
   users.push(newMember);
-  res.status(201).json({ status: 'success', data: newMember });
+  res.status(201).json({ status: 'success', message: '註冊成功' }); 
+  // 注意避免 API 回傳的資訊產生個資洩漏的可能，所以這邊會建議使用 message: '註冊成功' 。
 
 } catch(err) {
     next(err);
@@ -142,7 +143,7 @@ try{
 // - 保護：路由第二個參數掛上 verifyToken 守門員（驗過後會將使用者資料掛到 req.user）
 // - 輸出：200 + { status: 'success', user: ... }
 // 作答區
-router.get('/me', verifyToken, (req, res) => { 
+router.get('/me', verifyToken, (req, res, next) => { 
 
 try{
     res.status(200).json({ status: 'success', user: req.user });
